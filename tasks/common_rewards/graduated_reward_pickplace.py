@@ -40,12 +40,12 @@ def compute_reward(
     object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     # Tier 1: reach
     reach_threshold: float = 0.10,          # 10cm hand-to-object distance
-    # Tier 2: grasp (object lifted off table)
-    grasp_height_above_table: float = 0.02, # 2cm above table surface
+    # Tier 2: grasp (object lifted above rest position — cube center rests at 0.03m above table)
+    grasp_height_above_table: float = 0.06, # 6cm above table (3cm above rest = clearly lifted)
     # Tier 3: lift
-    lift_height_above_table: float = 0.05,  # 5cm above table surface
+    lift_height_above_table: float = 0.10,  # 10cm above table (7cm above rest)
     # Tier 4: high lift (clearly picked up, not just bumped)
-    high_lift_height_above_table: float = 0.10,  # 10cm above table
+    high_lift_height_above_table: float = 0.15,  # 15cm above table (12cm above rest)
     # Table surface height (from scene: object at 0.84, cube half-height 0.03)
     table_height: float = 0.81,
     # Wrist body names for reach detection (with fallback search)
