@@ -6,7 +6,7 @@
   Tier 1 (0.25): Hand reaches near object (within reach_threshold)
   Tier 2 (0.50): Object grasped — lifted off table surface
   Tier 3 (0.75): Object lifted significantly above table
-  Tier 4 (1.00): Object in relaxed target zone
+  Tier 4 (1.00): Object lifted high (clearly picked up, not just bumped)
 
 Replaces base_reward_pickplace_redblock.py which uses a tiny post target
 (3.7cm x 4.85cm, height +/-2.5mm) that gave 0% for all models.
@@ -44,12 +44,8 @@ def compute_reward(
     grasp_height_above_table: float = 0.02, # 2cm above table surface
     # Tier 3: lift
     lift_height_above_table: float = 0.05,  # 5cm above table surface
-    # Tier 4: place in target zone (relaxed 15cm x 15cm)
-    target_min_x: float = -4.35,
-    target_max_x: float = -4.05,
-    target_min_y: float = -4.13,
-    target_max_y: float = -3.83,
-    target_min_height_above_table: float = 0.05,
+    # Tier 4: high lift (clearly picked up, not just bumped)
+    high_lift_height_above_table: float = 0.10,  # 10cm above table
     # Table surface height (from scene: object at 0.84, cube half-height 0.03)
     table_height: float = 0.81,
     # Wrist body names for reach detection (with fallback search)
@@ -102,14 +98,8 @@ def compute_reward(
     lifted = object_height_above_table > lift_height_above_table
     reward = torch.where(lifted, torch.tensor(0.75, device=reward.device), reward)
 
-    # Tier 4 (1.00): object in relaxed target zone
-    in_target = (
-        (object_pos[:, 0] > target_min_x)
-        & (object_pos[:, 0] < target_max_x)
-        & (object_pos[:, 1] > target_min_y)
-        & (object_pos[:, 1] < target_max_y)
-        & (object_height_above_table > target_min_height_above_table)
-    )
-    reward = torch.where(in_target, torch.tensor(1.0, device=reward.device), reward)
+    # Tier 4 (1.00): object lifted high (clearly picked up)
+    high_lifted = object_height_above_table > high_lift_height_above_table
+    reward = torch.where(high_lifted, torch.tensor(1.0, device=reward.device), reward)
 
     return reward
