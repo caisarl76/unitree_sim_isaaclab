@@ -44,8 +44,9 @@ class ObjectTableSceneCfg(TableRedBlockSceneCfg):
         init_rot=(0.7071, 0, 0, -0.7071))
 
 
-    # 6. add camera configuration 
-    front_camera = CameraPresets.g1_front_camera()
+    # 6. add camera configuration (4 cameras to match Dex3 training datasets)
+    front_camera = CameraPresets.g1_front_camera()           # cam_left_high
+    right_high_camera = CameraPresets.g1_right_high_camera() # cam_right_high
     left_wrist_camera = CameraPresets.left_dex3_wrist_camera()
     right_wrist_camera = CameraPresets.right_dex3_wrist_camera()
 

@@ -85,8 +85,17 @@ class CameraPresets:
     
     @classmethod
     def g1_front_camera(cls) -> CameraCfg:
-        """front camera configuration"""
+        """front camera configuration (maps to cam_left_high in training datasets)"""
         return CameraBaseCfg.get_camera_config()
+    @classmethod
+    def g1_right_high_camera(cls) -> CameraCfg:
+        """right high camera configuration (maps to cam_right_high in training datasets)
+        Mounted on d435_link with right-side offset to simulate the right chest camera."""
+        return CameraBaseCfg.get_camera_config(
+            prim_path="/World/envs/env_.*/Robot/d435_link/right_high_cam",
+            pos_offset=(0, -0.15, 0),
+            rot_offset=(0.5, -0.5, 0.5, -0.5),
+        )
     @classmethod
     def h12_front_camera(cls) -> CameraCfg:
         """front camera configuration"""
