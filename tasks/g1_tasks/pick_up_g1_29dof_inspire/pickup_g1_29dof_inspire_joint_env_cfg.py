@@ -22,14 +22,44 @@ from . import mdp
 from tasks.common_config import G1RobotPresets, CameraPresets
 from tasks.common_event.event_manager import SimpleEvent, SimpleEventManager
 from tasks.common_scene.base_scene_pickplace_redblock import TableRedBlockSceneCfg
+from isaaclab.assets import RigidObjectCfg, AssetBaseCfg
+import isaaclab.sim as sim_utils
 
 
 @configclass
 class PickUpSceneCfg(TableRedBlockSceneCfg):
-    """Scene: table + red block + G1 Inspire hand."""
+    """Scene: table + red block + G1 Inspire hand.
+
+    Object moved further from robot (Y=-4.45 vs default -4.03) to prevent
+    hand-object contact at spawn. Robot must actively reach to score reward.
+    """
     robot: ArticulationCfg = G1RobotPresets.g1_29dof_inspire_base_fix(
         init_pos=(-4.2, -3.7, 0.76),
         init_rot=(0.7071, 0, 0, -0.7071),
+    )
+    # Override object position: move further from robot (0.75m in Y vs 0.33m default)
+    object = RigidObjectCfg(
+        prim_path="/World/envs/env_.*/Object",
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=[-4.25, -4.45, 0.84],
+            rot=[1, 0, 0, 0],
+        ),
+        spawn=sim_utils.CuboidCfg(
+            size=(0.06, 0.06, 0.06),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                disable_gravity=False,
+                retain_accelerations=False,
+            ),
+            mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(
+                collision_enabled=True,
+                contact_offset=0.01,
+                rest_offset=0.0,
+            ),
+            visual_material=sim_utils.PreviewSurfaceCfg(
+                diffuse_color=(0.8, 0.1, 0.1),
+            ),
+        ),
     )
     front_camera = CameraPresets.g1_front_camera()
     left_wrist_camera = CameraPresets.left_inspire_wrist_camera()
