@@ -39,7 +39,7 @@ def compute_reward(
     env: ManagerBasedRLEnv,
     object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     # Tier 1: reach
-    reach_threshold: float = 0.10,          # 10cm hand-to-object distance
+    reach_threshold: float = 0.05,          # 5cm hand-to-object (tightened from 10cm to avoid spawn overlap)
     # Tier 2: grasp (object lifted above rest position — cube center rests at 0.03m above table)
     grasp_height_above_table: float = 0.06, # 6cm above table (3cm above rest = clearly lifted)
     # Tier 3: lift
