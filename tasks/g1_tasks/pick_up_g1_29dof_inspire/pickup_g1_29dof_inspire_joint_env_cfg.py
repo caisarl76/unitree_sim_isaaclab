@@ -30,18 +30,18 @@ import isaaclab.sim as sim_utils
 class PickUpSceneCfg(TableRedBlockSceneCfg):
     """Scene: table + red block + G1 Inspire hand.
 
-    Object moved further from robot (Y=-4.45 vs default -4.03) to prevent
-    hand-object contact at spawn. Robot must actively reach to score reward.
+    Object moved further from robot (Y=-4.20 vs default -4.03) to prevent
+    hand-object contact at spawn while keeping within arm reach (~0.50m).
     """
     robot: ArticulationCfg = G1RobotPresets.g1_29dof_inspire_base_fix(
         init_pos=(-4.2, -3.7, 0.76),
         init_rot=(0.7071, 0, 0, -0.7071),
     )
-    # Override object position: move further from robot (0.75m in Y vs 0.33m default)
+    # Override object position: 0.50m from robot (vs 0.33m default, 0.75m was too far)
     object = RigidObjectCfg(
         prim_path="/World/envs/env_.*/Object",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[-4.25, -4.45, 0.84],
+            pos=[-4.25, -4.20, 0.84],
             rot=[1, 0, 0, 0],
         ),
         spawn=sim_utils.CuboidCfg(
