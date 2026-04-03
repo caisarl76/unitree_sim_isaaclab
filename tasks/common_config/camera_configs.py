@@ -212,4 +212,19 @@ class CameraPresets:
             clipping_range=(0.1, 1.0e5),
             pos_offset=(-0.04012, 0.07441 ,0.15711),
             rot_offset=(0.00539,0.86024,0.0424, 0.50809),
-        ) 
+        )
+    @classmethod
+    def g1_realsense_d435i_camera(cls) -> CameraCfg:
+        """Head-mounted monocular camera matching Intel RealSense D435i RGB specs.
+
+        FOV: 69.4deg horizontal, resolution: 640x480, range: 0.1-5.0m.
+        Maps to cam_head in monocular training datasets.
+        """
+        return CameraBaseCfg.get_camera_config(
+            prim_path="/World/envs/env_.*/Robot/d435_link/front_cam",
+            height=480,
+            width=640,
+            focal_length=1.88,
+            horizontal_aperture=3.896,
+            clipping_range=(0.1, 5.0),
+        )
