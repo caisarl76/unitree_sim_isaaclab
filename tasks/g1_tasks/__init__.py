@@ -19,6 +19,9 @@ from . import pick_redblock_into_drawer_g1_29dof_dex1
 from . import pick_redblock_into_drawer_g1_29dof_dex3
 from . import pick_place_redblock_g1_29dof_inspire
 from . import pick_up_g1_29dof_inspire
+from . import pick_up_charger_g1_29dof_inspire
+from . import pick_up_drink_g1_29dof_inspire
+from . import pick_place_pillbottle_g1_29dof_inspire
 from . import pick_place_toastedbread_g1_29dof_dex3
 from . import move_cylinder_g1_29dof_dex1_wholebody
 from . import move_cylinder_g1_29dof_dex3_wholebody
@@ -38,4 +41,7 @@ __all__ = [
         "move_cylinder_g1_29dof_inspire_wholebody",
         "pick_place_toastedbread_g1_29dof_dex3",
         "pick_up_g1_29dof_inspire",
+        "pick_up_charger_g1_29dof_inspire",
+        "pick_up_drink_g1_29dof_inspire",
+        "pick_place_pillbottle_g1_29dof_inspire",
 ]
