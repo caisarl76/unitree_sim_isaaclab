@@ -46,7 +46,8 @@ def compute_reward(
     # Tier 5: placed (object on target + hand released)
     place_height_above_table: float = 0.08,
     release_distance: float = 0.10,
-    # Target position (XY) — matches red tape in scene config
+    # Target position (XY) — scene-specific defaults for TablePillBottleSceneCfg.
+    # Override these when using a different scene layout.
     target_x: float = -4.21,
     target_y: float = -3.664,
     # Table surface height
