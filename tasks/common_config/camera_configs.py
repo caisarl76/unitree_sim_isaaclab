@@ -228,3 +228,20 @@ class CameraPresets:
             horizontal_aperture=3.896,
             clipping_range=(0.1, 5.0),
         )
+
+    @classmethod
+    def g1_realsense_d435i_camera_rgbd(cls) -> CameraCfg:
+        """Head-mounted D435i with RGB + depth rendering.
+
+        Same as g1_realsense_d435i_camera() but adds distance_to_camera output.
+        Depth is returned as float32 distance in meters from the camera plane.
+        """
+        return CameraBaseCfg.get_camera_config(
+            prim_path="/World/envs/env_.*/Robot/d435_link/front_cam",
+            height=480,
+            width=640,
+            focal_length=1.88,
+            horizontal_aperture=3.896,
+            clipping_range=(0.1, 5.0),
+            data_types=["rgb", "distance_to_camera"],
+        )
