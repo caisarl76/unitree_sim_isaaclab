@@ -353,7 +353,7 @@ def main():
             focal_length=3.0,
             horizontal_aperture=22.0,
             vertical_aperture=16.0,
-            exposure=0.8,                
+            exposure=0.8,
             focus_distance=1.2
         )
     env.sim.reset()
@@ -508,14 +508,20 @@ def main():
                         print(f"data_idx: {data_idx}")
                         try:
                             sim_state,task_name = action_provider.load_data(data_json_list[data_idx])
-                            if task_name!=args_cli.task:
-                                raise ValueError(f" The {task_name} in the dataset is different from the {args_cli.task} being executed .")
+                            if task_name and task_name!=args_cli.task:
+                                print(f"Warning: task_name mismatch: data={task_name}, env={args_cli.task}")
                         except Exception as e:
                             print(f"Failed to load data: {e}")
                             raise e
                         try:
-                            env.reset_to(sim_state, torch.tensor([0], device=env.device), is_relative=True)
-                            env.sim.reset()
+                            if sim_state is not None:
+                                # Original path: reset to recorded sim state
+                                env.reset_to(sim_state, torch.tensor([0], device=env.device), is_relative=True)
+                                env.sim.reset()
+                            else:
+                                # No sim_state (real-world data): full env reset
+                                print(f"[replay] No sim_state — env reset for episode {data_idx}")
+                                env.reset()
                             time.sleep(1)
                             action_provider.start_replay()
                             data_idx+=1
@@ -582,7 +588,10 @@ def main():
         # clean up resources
         print("\nclean up resources...")
         controller.cleanup()
-        image_server.stop()
+        try:
+            image_server.stop()
+        except NameError:
+            pass  # image_server not created in replay mode
         env.close()
         print("cleanup completed")
     # profiler.disable()

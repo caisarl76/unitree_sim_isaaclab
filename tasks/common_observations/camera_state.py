@@ -66,110 +66,19 @@ def _ensure_async_started():
 
 def get_camera_image(
     env: ManagerBasedRLEnv,
-) -> dict:
-    # pass
-    """get multiple camera images and write them to shared memory
-    
-    Args:
-        env: ManagerBasedRLEnv - reinforcement learning environment instance
-    
-    Returns:
-        dict: dictionary containing multiple camera images
+) -> torch.Tensor:
+    """Return a placeholder tensor for the observation manager.
+
+    Actual camera images for data generation are read directly from sensors
+    in action_provider_replay._save_frame_direct() — after env.sim.render()
+    ensures the camera buffer is properly populated.
+
+    This function only provides a zero placeholder so the obs manager
+    has a valid tensor shape. Reading camera data here during env.reset()
+    triggers buffer expand errors.
     """
     global _return_placeholder
     if _return_placeholder is None:
         _return_placeholder = torch.zeros((1, 480, 640, 3))
-
-
-    _camera_cache['frame_step'] = (_camera_cache['frame_step'] + 1) % max(1, _camera_cache['write_interval_steps'])
-
-
-    scene_id = id(env.scene)
-    if _camera_cache['last_scene_id'] != scene_id:
-        _camera_cache['camera_keys'] = list(env.scene.keys())
-        _camera_cache['available_cameras'] = [name for name in _camera_cache['camera_keys'] if "camera" in name.lower()]
-        _camera_cache['last_scene_id'] = scene_id
-
-
-    if _camera_cache['frame_step'] == 0:
-        try:
-            dt = getattr(env, 'physics_dt', 0.02)
-            if hasattr(env.scene, 'sensors') and env.scene.sensors:
-                for sensor in env.scene.sensors.values():
-                    try:
-                        sensor.update(dt, force_recompute=False)
-                    except Exception:
-                        pass
-        except Exception:
-            pass
-    
-    # get the camera images
-    images = {}
-    # env.sim.render()
-    
-
-    camera_keys = _camera_cache['camera_keys']
-    # Head camera (front camera)
-    if "front_camera" in camera_keys:
-        head_image = env.scene["front_camera"].data.output["rgb"][0]  # [batch, height, width, 3]
-
-        if head_image.device.type == 'cpu':
-            images["head"] = head_image.numpy()
-        else:
-            images["head"] = head_image.cpu().numpy()
-    
-    # Left camera (left wrist camera)
-    if "left_wrist_camera" in camera_keys:
-        left_image = env.scene["left_wrist_camera"].data.output["rgb"][0]
-        if left_image.device.type == 'cpu':
-            images["left"] = left_image.numpy()
-        else:
-            images["left"] = left_image.cpu().numpy()
-    
-    # Right camera (right wrist camera)  
-    if "right_wrist_camera" in camera_keys:
-        right_image = env.scene["right_wrist_camera"].data.output["rgb"][0]
-        if right_image.device.type == 'cpu':
-            images["right"] = right_image.numpy()
-        else:
-            images["right"] = right_image.cpu().numpy()
-    
-    # if no camera with the specified name is found, try other common camera names
-    if not images:
-
-        available_cameras = _camera_cache['available_cameras']
-        if available_cameras:
-            print(f"[camera_state] No standard cameras found. Available cameras: {available_cameras}")
-            
-            # if there are available cameras, use the first three as head, left, right
-            for i, camera_name in enumerate(available_cameras[:3]):
-                camera_image = env.scene[camera_name].data.output["rgb"][0]
-                
-               
-                if camera_image.device.type == 'cpu':
-                    numpy_image = camera_image.numpy()
-                else:
-                    numpy_image = camera_image.cpu().numpy()
-                
-                if i == 0:
-                    images["head"] = numpy_image
-                elif i == 1:
-                    images["left"] = numpy_image
-                elif i == 2:
-                    images["right"] = numpy_image
-    
-
-    if images and _camera_cache['frame_step'] == 0:
-        _ensure_async_started()
-        try:
-            
-            if _async_queue.full():
-                _async_queue.get_nowait()
-            _async_queue.put_nowait(images)
-        except Exception:
-            pass
-    elif not images:
-        print("[camera_state] No camera images found in the environment")
-    
     return _return_placeholder
 

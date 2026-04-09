@@ -84,6 +84,62 @@ def load_robot_data(json_path):
     return robot_action, hand_action, sim_state_list,sim_task_name_list,sim_state_json_list
 
 
+def load_robot_data_no_simstate(json_path):
+    """Load robot data from real-world recordings that have no sim_state.
+
+    Extracts both actions and states from the JSON so the caller can set
+    joint positions directly in simulation.
+
+    Returns:
+        tuple: (robot_action, hand_action, robot_state, hand_state, task_name)
+            - robot_action: List[np.ndarray] — arm actions [left(7), right(7)]
+            - hand_action:  List[np.ndarray] — hand actions [right(N), left(N)]
+            - robot_state:  List[np.ndarray] — arm states  [left(7), right(7)]
+            - hand_state:   List[np.ndarray] — hand states  [right(N), left(N)]
+            - task_name: str — from text.goal field
+    """
+    with open(json_path, 'r') as f:
+        content = json.load(f)
+
+    data = content.get("data", [])
+    if not data:
+        raise ValueError("data is None")
+
+    text = content.get("text", {})
+    task_name = text.get("goal", "")
+
+    robot_action = []
+    hand_action = []
+    robot_state = []
+    hand_state = []
+
+    for item in data:
+        action = item.get("actions", {})
+        state = item.get("states", {})
+        if not action:
+            raise ValueError("data not have action")
+
+        # Actions (for recording into output)
+        la_a = np.array(action.get("left_arm", {}).get("qpos", []))
+        ra_a = np.array(action.get("right_arm", {}).get("qpos", []))
+        robot_action.append(np.concatenate([la_a, ra_a]))
+
+        lh_a = np.array(action.get("left_ee", {}).get("qpos", []))
+        rh_a = np.array(action.get("right_ee", {}).get("qpos", []))
+        hand_action.append(np.concatenate([rh_a, lh_a]))  # right first, matching original convention
+
+        # States (for direct joint position setting)
+        la_s = np.array(state.get("left_arm", {}).get("qpos", []))
+        ra_s = np.array(state.get("right_arm", {}).get("qpos", []))
+        robot_state.append(np.concatenate([la_s, ra_s]))
+
+        lh_s = np.array(state.get("left_ee", {}).get("qpos", []))
+        rh_s = np.array(state.get("right_ee", {}).get("qpos", []))
+        hand_state.append(np.concatenate([rh_s, lh_s]))  # right first
+
+    return robot_action, hand_action, robot_state, hand_state, task_name
+
+
 
 def load_robot_data2(json_path):
     """
@@ -162,7 +218,10 @@ def parse_nested_sim_state(json_str: str):
 
 def get_file_path(dir):
     root_dir = Path(dir)
-    json_paths = list(root_dir.glob("**/data.json"))
+    # Use */data.json first (works with symlinked episode dirs); fall back to **/data.json
+    json_paths = list(root_dir.glob("*/data.json"))
+    if not json_paths:
+        json_paths = list(root_dir.glob("**/data.json"))
     pathlist = [str(p) for p in json_paths]
     return pathlist
 

@@ -31,8 +31,8 @@ class PillBottleSceneCfg(TablePillBottleSceneCfg):
         init_pos=(-4.2, -3.7, 0.76),
         init_rot=(0.7071, 0, 0, -0.7071),  # -90 deg Z
     )
-    # Monocular head camera matching RealSense D435i
-    front_camera = CameraPresets.g1_realsense_d435i_camera()
+    # RGBD head camera matching RealSense D435i (RGB + depth)
+    front_camera = CameraPresets.g1_realsense_d435i_camera_rgbd()
 
 
 @configclass
@@ -65,7 +65,14 @@ class TerminationsCfg:
 
 @configclass
 class RewardsCfg:
-    reward = RewTerm(func=mdp.compute_reward, weight=1.0)
+    reward = RewTerm(
+        func=mdp.compute_reward,
+        weight=1.0,
+        params={
+            "target_x": -4.25,   # match target_area position in scene
+            "target_y": -3.92,
+        },
+    )
 
 
 @configclass

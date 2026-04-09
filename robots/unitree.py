@@ -531,6 +531,116 @@ G129_CFG_WITH_INSPIRE_HAND = ArticulationCfg(
 )
 
 
+# Upstream-matched Inspire FTP config (from isaac-sim/IsaacLab G1_INSPIRE_FTP_CFG)
+# Key differences from G129_CFG_WITH_INSPIRE_HAND:
+#   - Arms: stiffness=3000, damping=100 (stable manipulation)
+#   - Hands: stiffness=10, damping=0.2 (flexible grasping)
+#   - Gravity disabled, root fixed (tabletop manipulation)
+G129_CFG_WITH_INSPIRE_FTP = ArticulationCfg(
+    spawn=sim_utils.UsdFileCfg(
+        usd_path=f"{project_root}/assets/robots/g1-29dof-inspire-base-fix-usd/g1_29dof_with_inspire_rev_1_0.usd",
+        activate_contact_sensors=True,
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=True,
+            retain_accelerations=True,
+            linear_damping=0.0,
+            angular_damping=0.0,
+            max_linear_velocity=1000.0,
+            max_angular_velocity=1000.0,
+            max_depenetration_velocity=1.0,
+        ),
+        articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            enabled_self_collisions=False,
+            fix_root_link=True,
+            solver_position_iteration_count=8,
+            solver_velocity_iteration_count=4,
+        ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.0, 1.0),
+        joint_pos={".*": 0.0},
+        joint_vel={".*": 0.0},
+    ),
+    soft_joint_pos_limit_factor=0.9,
+    actuators={
+        "legs": ImplicitActuatorCfg(
+            joint_names_expr=[
+                ".*_hip_yaw_joint",
+                ".*_hip_roll_joint",
+                ".*_hip_pitch_joint",
+                ".*_knee_joint",
+            ],
+            effort_limit=None,
+            velocity_limit=None,
+            stiffness=None,
+            damping=None,
+            armature=None,
+        ),
+        "waist": ImplicitActuatorCfg(
+            joint_names_expr=[
+                "waist_yaw_joint",
+                "waist_roll_joint",
+                "waist_pitch_joint",
+            ],
+            effort_limit=1000.0,
+            velocity_limit=0.0,
+            stiffness={
+                "waist_yaw_joint": 5000.0,
+                "waist_roll_joint": 5000.0,
+                "waist_pitch_joint": 5000.0,
+            },
+            damping={
+                "waist_yaw_joint": 5.0,
+                "waist_roll_joint": 5.0,
+                "waist_pitch_joint": 5.0,
+            },
+            armature=0.001,
+        ),
+        "feet": ImplicitActuatorCfg(
+            effort_limit=None,
+            joint_names_expr=[".*_ankle_pitch_joint", ".*_ankle_roll_joint"],
+            stiffness=None,
+            damping=None,
+        ),
+        "arms": ImplicitActuatorCfg(
+            joint_names_expr=[
+                ".*_shoulder_.*_joint",
+                ".*_elbow_joint",
+                ".*_wrist_.*_joint",
+            ],
+            effort_limit=300,
+            velocity_limit=100,
+            stiffness=3000.0,
+            damping=100.0,
+            armature={
+                ".*_shoulder_.*": 0.001,
+                ".*_elbow_.*": 0.001,
+                ".*_wrist_.*_joint": 0.001,
+            },
+        ),
+        "hands": ImplicitActuatorCfg(
+            joint_names_expr=[
+                ".*_index_proximal_joint",
+                ".*_index_intermediate_joint",
+                ".*_middle_proximal_joint",
+                ".*_middle_intermediate_joint",
+                ".*_pinky_proximal_joint",
+                ".*_pinky_intermediate_joint",
+                ".*_ring_proximal_joint",
+                ".*_ring_intermediate_joint",
+                ".*_thumb_proximal_yaw_joint",
+                ".*_thumb_proximal_pitch_joint",
+                ".*_thumb_intermediate_joint",
+                ".*_thumb_distal_joint",
+            ],
+            effort_limit=30.0,
+            velocity_limit=10.0,
+            stiffness=10.0,
+            damping=0.2,
+            armature={".*": 0.001},
+        ),
+    },
+)
 
 
 G129_CFG_WITH_DEX1_WHOLEBODY = ArticulationCfg(

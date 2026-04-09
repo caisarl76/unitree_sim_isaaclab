@@ -22,6 +22,7 @@ from . import pick_up_g1_29dof_inspire
 from . import pick_up_charger_g1_29dof_inspire
 from . import pick_up_drink_g1_29dof_inspire
 from . import pick_place_pillbottle_g1_29dof_inspire
+from . import pick_place_pillbottle_g1_29dof_inspire_ftp
 from . import pick_place_toastedbread_g1_29dof_dex3
 from . import move_cylinder_g1_29dof_dex1_wholebody
 from . import move_cylinder_g1_29dof_dex3_wholebody
@@ -44,4 +45,5 @@ __all__ = [
         "pick_up_charger_g1_29dof_inspire",
         "pick_up_drink_g1_29dof_inspire",
         "pick_place_pillbottle_g1_29dof_inspire",
+        "pick_place_pillbottle_g1_29dof_inspire_ftp",
 ]
