@@ -40,17 +40,20 @@ from .subtask_signals import (
     compute_wrist_to_bottle_dist,
     compute_bottle_to_target_xy,
 )
-from .ik_solver import PlacoIKSolver, compose_26d_action
+from .ik_solver import PlacoIKSolver, compose_26d_action, compose_53d_action, RIGHT_ARM_ACTION_INDICES
 
 # ---------------------------------------------------------------------------
-# Try to import isaaclab_mimic; fall back to plain ManagerBasedRLEnv
+# Try to import ManagerBasedRLMimicEnv (available when isaaclab_mimic installed)
 # ---------------------------------------------------------------------------
 try:
-    from isaaclab_mimic.envs import ManagerBasedRLMimicEnv
+    from isaaclab.envs import ManagerBasedRLMimicEnv
+    from isaaclab.envs.mimic_env_cfg import MimicEnvCfg, SubTaskConfig
     _BASE_CLS = ManagerBasedRLMimicEnv
+    _HAS_MIMIC = True
 except ImportError:
     from isaaclab.envs import ManagerBasedRLEnv
     _BASE_CLS = ManagerBasedRLEnv
+    _HAS_MIMIC = False
 
 
 # ---------------------------------------------------------------------------
@@ -131,10 +134,98 @@ INSPIRE_RIGHT_HAND_JOINT_INDICES = [36, 37, 35, 34, 48, 38, 31, 32, 30, 29, 43, 
 # Env config dataclass
 # ---------------------------------------------------------------------------
 
-@configclass
-class PickPlacePillBottleMimicEnvCfg(PickPlacePillBottleG129InspireFTPEnvCfg):
-    """MimicGen env config — inherits all scene/reward/obs from FTP parent."""
-    pass
+if _HAS_MIMIC:
+    @configclass
+    class PickPlacePillBottleMimicEnvCfg(PickPlacePillBottleG129InspireFTPEnvCfg, MimicEnvCfg):
+        """MimicGen env config — inherits scene/reward/obs from FTP parent + MimicGen datagen."""
+
+        def __post_init__(self):
+            super().__post_init__()
+
+            # MimicGen datagen settings
+            self.datagen_config.name = "demo_src_pickplace_pillbottle_g1_inspire"
+            self.datagen_config.generation_guarantee = True
+            self.datagen_config.generation_keep_failed = True
+            self.datagen_config.generation_num_trials = 10
+            self.datagen_config.generation_select_src_per_subtask = True
+            self.datagen_config.generation_transform_first_robot_pose = False
+            self.datagen_config.generation_interpolate_from_last_target_pose = True
+            self.datagen_config.generation_relative = True
+            self.datagen_config.max_num_failures = 25
+            self.datagen_config.seed = 1
+
+            # 5-phase subtask decomposition for pick-and-place
+            subtask_configs = []
+            subtask_configs.append(SubTaskConfig(
+                object_ref="object",  # pill bottle rigid body name in scene
+                subtask_term_signal="reach",
+                subtask_term_offset_range=(10, 20),
+                selection_strategy="nearest_neighbor_object",
+                selection_strategy_kwargs={"nn_k": 3},
+                action_noise=0.005,
+                num_interpolation_steps=5,
+                num_fixed_steps=0,
+                apply_noise_during_interpolation=False,
+                description="Reach to pill bottle",
+                next_subtask_description="Grasp pill bottle",
+            ))
+            subtask_configs.append(SubTaskConfig(
+                object_ref="object",
+                subtask_term_signal="grasp",
+                subtask_term_offset_range=(5, 10),
+                selection_strategy="nearest_neighbor_object",
+                selection_strategy_kwargs={"nn_k": 3},
+                action_noise=0.005,
+                num_interpolation_steps=5,
+                num_fixed_steps=0,
+                apply_noise_during_interpolation=False,
+                description="Grasp pill bottle",
+                next_subtask_description="Lift pill bottle",
+            ))
+            subtask_configs.append(SubTaskConfig(
+                object_ref="object",
+                subtask_term_signal="lift",
+                subtask_term_offset_range=(5, 10),
+                selection_strategy="nearest_neighbor_object",
+                selection_strategy_kwargs={"nn_k": 3},
+                action_noise=0.005,
+                num_interpolation_steps=5,
+                num_fixed_steps=0,
+                apply_noise_during_interpolation=False,
+                description="Lift pill bottle",
+                next_subtask_description="Transport to target",
+            ))
+            subtask_configs.append(SubTaskConfig(
+                object_ref="object",
+                subtask_term_signal="transport",
+                subtask_term_offset_range=(10, 20),
+                selection_strategy="nearest_neighbor_object",
+                selection_strategy_kwargs={"nn_k": 3},
+                action_noise=0.005,
+                num_interpolation_steps=5,
+                num_fixed_steps=0,
+                apply_noise_during_interpolation=False,
+                description="Transport to target zone",
+                next_subtask_description="Place pill bottle",
+            ))
+            subtask_configs.append(SubTaskConfig(
+                object_ref="object",
+                subtask_term_signal=None,  # final subtask
+                subtask_term_offset_range=(0, 0),
+                selection_strategy="nearest_neighbor_object",
+                selection_strategy_kwargs={"nn_k": 3},
+                action_noise=0.005,
+                num_interpolation_steps=5,
+                num_fixed_steps=0,
+                apply_noise_during_interpolation=False,
+                description="Place pill bottle on target",
+            ))
+            self.subtask_configs["robot"] = subtask_configs
+else:
+    @configclass
+    class PickPlacePillBottleMimicEnvCfg(PickPlacePillBottleG129InspireFTPEnvCfg):
+        """Fallback env config when isaaclab_mimic is not installed."""
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -256,8 +347,12 @@ class PickPlacePillBottleMimicEnv(_BASE_CLS):
     # MimicGen interface
     # ------------------------------------------------------------------
 
-    def get_robot_eef_pose(self) -> Tensor:
+    def get_robot_eef_pose(self, eef_name: str = "robot", env_ids: Sequence[int] | None = None) -> Tensor:
         """Return right wrist world pose as [N, 4, 4] homogeneous matrices.
+
+        Args:
+            eef_name: Name of the end effector (unused, single-arm task).
+            env_ids: Environment indices. If None, all envs.
 
         Returns:
             [N, 4, 4] float32 tensors on self.device.
@@ -312,39 +407,32 @@ class PickPlacePillBottleMimicEnv(_BASE_CLS):
         target_pose: Tensor,
         finger_actions: Tensor,
     ) -> Tensor:
-        """Convert target EEF pose + finger actions to a 26-D action vector.
+        """Convert target EEF pose + finger actions to a 53-D action vector.
 
-        Uses Placo IK to solve for right-arm joint positions.  Left arm stays
-        at zero (default offset).  Operates per-env with CPU IK (Phase 1).
+        Uses Placo IK to solve for right-arm joint positions. All other joints
+        (legs, waist, left arm, left hand) stay at 0 (use_default_offset=True
+        holds them at init pose). Operates per-env with CPU IK (Phase 1).
 
         Args:
             target_pose:    [N, 4, 4] desired right wrist pose in world frame.
-            finger_actions: [N, 6] right hand joint position targets.
+            finger_actions: [N, 12] right hand joint position targets
+                            (full 12-joint Inspire hand).
 
         Returns:
-            [N, 26] action vectors: [left_arm(7), right_arm(7), left_hand(6), right_hand(6)].
+            [N, 53] action vectors for the full articulation.
         """
         N = target_pose.shape[0]
         ik = self._get_ik_solver()
 
-        # Current right-arm joint positions: joints 7..14 in arm-only view
-        # In the full articulation: arm joints are at offset 15 (see CLAUDE.md)
-        # [N, num_joints] → pick right arm (indices 22..28 in reindexed 29D)
-        # We use raw joint_pos slice matching RIGHT_ARM_JOINT_NAMES positions.
-        # Right arm joints are at raw indices 7..13 within the 14-element arm block
-        # (left arm first 7, then right arm next 7 in the JointPositionActionCfg ordering).
         joint_pos_all = self.scene["robot"].data.joint_pos  # [N, num_joints]
 
         # Build output on CPU, then move to device
-        actions_np = np.zeros((N, 26), dtype=np.float32)
+        actions_np = np.zeros((N, 53), dtype=np.float32)
 
         target_pose_np = target_pose.cpu().numpy()
         finger_np = finger_actions.cpu().numpy()
 
         for i in range(N):
-            # Current right-arm joint positions (7D) — extract from articulation
-            # We find the joint positions for RIGHT_ARM_JOINT_NAMES by querying
-            # joint_names from the articulation.
             if i == 0:
                 # Build the right-arm joint index mapping once
                 if not hasattr(self, "_right_arm_joint_indices"):
@@ -362,7 +450,7 @@ class PickPlacePillBottleMimicEnv(_BASE_CLS):
                 current_joint_pos=right_arm_current,
             )  # [7]
 
-            actions_np[i] = compose_26d_action(
+            actions_np[i] = compose_53d_action(
                 right_arm=right_arm_target,
                 right_hand=finger_np[i],
             )
@@ -378,7 +466,7 @@ class PickPlacePillBottleMimicEnv(_BASE_CLS):
         latest action execution).
 
         Args:
-            actions: [N, 26] action vectors (ignored).
+            actions: [N, 53] action vectors (ignored).
 
         Returns:
             [N, 4, 4] current right wrist pose.
@@ -394,7 +482,7 @@ class PickPlacePillBottleMimicEnv(_BASE_CLS):
         return {
             "env_id": "Isaac-PickPlace-PillBottle-G129-InspireFTP-Mimic",
             "subtask_configs": SUBTASK_CONFIGS,
-            "action_dim": 26,
+            "action_dim": 53,
             "eef_name": "right_wrist_yaw_link",
             "objects": ["bottle"],
             "target_pos": self._target_pos[0].cpu().tolist(),

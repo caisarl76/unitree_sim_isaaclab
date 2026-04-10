@@ -30,6 +30,19 @@ RIGHT_ARM_JOINT_NAMES = [
 LEFT_ARM_INIT = np.zeros(7, dtype=np.float32)
 LEFT_HAND_INIT = np.zeros(6, dtype=np.float32)
 
+# Full 53D action space joint index mapping (from container inspection)
+# Ordering: interleaved L/R due to preserve_order=False in JointPositionActionCfg
+ACTION_DIM = 53
+
+# Right arm indices within 53D action vector
+RIGHT_ARM_ACTION_INDICES = [12, 16, 20, 22, 24, 26, 28]  # shoulder_p/r/y, elbow, wrist_r/p/y
+
+# Right hand indices within 53D action vector (12 Inspire joints)
+RIGHT_HAND_ACTION_INDICES = [34, 35, 36, 37, 38, 44, 45, 46, 47, 48, 50, 52]
+# Ordering: R_index_prox, R_middle_prox, R_pinky_prox, R_ring_prox, R_thumb_prox_yaw,
+#           R_index_inter, R_middle_inter, R_pinky_inter, R_ring_inter, R_thumb_prox_pitch,
+#           R_thumb_inter, R_thumb_distal
+
 
 # ---------------------------------------------------------------------------
 # Lazy import helper
@@ -200,3 +213,33 @@ def compose_26d_action(
         raise ValueError(f"left_hand must be shape (6,), got {left_hand.shape}")
 
     return np.concatenate([left_arm, right_arm, left_hand, right_hand])
+
+
+def compose_53d_action(
+    right_arm: np.ndarray,
+    right_hand: np.ndarray,
+) -> np.ndarray:
+    """Assemble a 53-D action vector for the full articulation.
+
+    Legs, waist, left arm, and left hand are held at 0 (default offset).
+    Only right arm (7 joints) and right hand (12 joints) are set.
+
+    Args:
+        right_arm:  [7] right arm joint positions (radians).
+        right_hand: [12] right hand joint positions (radians).
+
+    Returns:
+        [53] action vector with zeros everywhere except right arm/hand.
+    """
+    right_arm = np.asarray(right_arm, dtype=np.float32)
+    right_hand = np.asarray(right_hand, dtype=np.float32)
+
+    if right_arm.shape != (7,):
+        raise ValueError(f"right_arm must be shape (7,), got {right_arm.shape}")
+    if right_hand.shape != (12,):
+        raise ValueError(f"right_hand must be shape (12,), got {right_hand.shape}")
+
+    action = np.zeros(ACTION_DIM, dtype=np.float32)
+    action[RIGHT_ARM_ACTION_INDICES] = right_arm
+    action[RIGHT_HAND_ACTION_INDICES] = right_hand
+    return action
