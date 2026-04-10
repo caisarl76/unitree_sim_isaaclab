@@ -229,6 +229,34 @@ else:
 
 
 # ---------------------------------------------------------------------------
+# No-camera variant (avoids Isaac Lab 2.3.2 camera init bug in headless)
+# ---------------------------------------------------------------------------
+
+if _HAS_MIMIC:
+    @configclass
+    class PickPlacePillBottleMimicNoCamEnvCfg(PickPlacePillBottleMimicEnvCfg):
+        """MimicGen env without camera — for annotation and headless generation."""
+
+        def __post_init__(self):
+            super().__post_init__()
+            # Strip camera from scene
+            self.scene.front_camera = None
+            # Strip camera obs
+            if hasattr(self.observations.policy, "camera_image"):
+                self.observations.policy.camera_image = None
+else:
+    @configclass
+    class PickPlacePillBottleMimicNoCamEnvCfg(PickPlacePillBottleG129InspireFTPEnvCfg):
+        """Fallback no-camera env config."""
+
+        def __post_init__(self):
+            super().__post_init__()
+            self.scene.front_camera = None
+            if hasattr(self.observations.policy, "camera_image"):
+                self.observations.policy.camera_image = None
+
+
+# ---------------------------------------------------------------------------
 # Env class
 # ---------------------------------------------------------------------------
 
