@@ -253,11 +253,14 @@ if _HAS_MIMIC:
 
         def __post_init__(self):
             super().__post_init__()
-            # Replace scene with no-camera variant
-            self.scene = _PillBottleFTPNoCamSceneCfg(num_envs=self.scene.num_envs)
-            # Strip camera obs term
-            if hasattr(self.observations.policy, "camera_image"):
-                del self.observations.policy.camera_image
+            # Replace scene with no-camera variant, preserving spacing
+            nocam_scene = _PillBottleFTPNoCamSceneCfg(
+                num_envs=self.scene.num_envs,
+                env_spacing=self.scene.env_spacing,
+            )
+            self.scene = nocam_scene
+            # Disable camera obs (set to None — del breaks configclass)
+            self.observations.policy.camera_image = None
 else:
     @configclass
     class PickPlacePillBottleMimicNoCamEnvCfg(PickPlacePillBottleG129InspireFTPEnvCfg):
@@ -265,9 +268,12 @@ else:
 
         def __post_init__(self):
             super().__post_init__()
-            self.scene = _PillBottleFTPNoCamSceneCfg(num_envs=self.scene.num_envs)
-            if hasattr(self.observations.policy, "camera_image"):
-                del self.observations.policy.camera_image
+            nocam_scene = _PillBottleFTPNoCamSceneCfg(
+                num_envs=self.scene.num_envs,
+                env_spacing=self.scene.env_spacing,
+            )
+            self.scene = nocam_scene
+            self.observations.policy.camera_image = None
 
 
 # ---------------------------------------------------------------------------
