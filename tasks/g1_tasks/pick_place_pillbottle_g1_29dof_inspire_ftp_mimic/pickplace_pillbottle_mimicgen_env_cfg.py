@@ -232,6 +232,20 @@ else:
 # No-camera variant (avoids Isaac Lab 2.3.2 camera init bug in headless)
 # ---------------------------------------------------------------------------
 
+from tasks.common_config import G1RobotPresets
+from tasks.common_scene.base_scene_pickplace_pillbottle import TablePillBottleSceneCfg
+from isaaclab.assets import ArticulationCfg
+
+@configclass
+class _PillBottleFTPNoCamSceneCfg(TablePillBottleSceneCfg):
+    """Pill bottle scene WITHOUT camera (avoids Isaac Lab 2.3.2 headless bug)."""
+    robot: ArticulationCfg = G1RobotPresets.g1_29dof_inspire_ftp_base_fix(
+        init_pos=(-4.2, -3.7, 0.76),
+        init_rot=(0.7071, 0, 0, -0.7071),
+    )
+    # NO front_camera
+
+
 if _HAS_MIMIC:
     @configclass
     class PickPlacePillBottleMimicNoCamEnvCfg(PickPlacePillBottleMimicEnvCfg):
@@ -239,11 +253,11 @@ if _HAS_MIMIC:
 
         def __post_init__(self):
             super().__post_init__()
-            # Strip camera from scene
-            self.scene.front_camera = None
-            # Strip camera obs
+            # Replace scene with no-camera variant
+            self.scene = _PillBottleFTPNoCamSceneCfg(num_envs=self.scene.num_envs)
+            # Strip camera obs term
             if hasattr(self.observations.policy, "camera_image"):
-                self.observations.policy.camera_image = None
+                del self.observations.policy.camera_image
 else:
     @configclass
     class PickPlacePillBottleMimicNoCamEnvCfg(PickPlacePillBottleG129InspireFTPEnvCfg):
@@ -251,9 +265,9 @@ else:
 
         def __post_init__(self):
             super().__post_init__()
-            self.scene.front_camera = None
+            self.scene = _PillBottleFTPNoCamSceneCfg(num_envs=self.scene.num_envs)
             if hasattr(self.observations.policy, "camera_image"):
-                self.observations.policy.camera_image = None
+                del self.observations.policy.camera_image
 
 
 # ---------------------------------------------------------------------------
