@@ -235,6 +235,9 @@ else:
 from tasks.common_config import G1RobotPresets
 from tasks.common_scene.base_scene_pickplace_pillbottle import TablePillBottleSceneCfg
 from isaaclab.assets import ArticulationCfg
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from ..pick_place_pillbottle_g1_29dof_inspire_ftp import mdp as ftp_mdp
 
 @configclass
 class _PillBottleFTPNoCamSceneCfg(TablePillBottleSceneCfg):
@@ -246,6 +249,22 @@ class _PillBottleFTPNoCamSceneCfg(TablePillBottleSceneCfg):
     # NO front_camera
 
 
+@configclass
+class _NoCamObservationsCfg:
+    """Observations WITHOUT camera_image."""
+    @configclass
+    class PolicyCfg(ObsGroup):
+        robot_joint_state = ObsTerm(func=ftp_mdp.get_robot_boy_joint_states)
+        robot_inspire_state = ObsTerm(func=ftp_mdp.get_robot_inspire_joint_states)
+        # NO camera_image
+
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = False
+
+    policy: PolicyCfg = PolicyCfg()
+
+
 if _HAS_MIMIC:
     @configclass
     class PickPlacePillBottleMimicNoCamEnvCfg(PickPlacePillBottleMimicEnvCfg):
@@ -253,14 +272,11 @@ if _HAS_MIMIC:
 
         def __post_init__(self):
             super().__post_init__()
-            # Replace scene with no-camera variant, preserving spacing
-            nocam_scene = _PillBottleFTPNoCamSceneCfg(
+            self.scene = _PillBottleFTPNoCamSceneCfg(
                 num_envs=self.scene.num_envs,
                 env_spacing=self.scene.env_spacing,
             )
-            self.scene = nocam_scene
-            # Disable camera obs (set to None — del breaks configclass)
-            self.observations.policy.camera_image = None
+            self.observations = _NoCamObservationsCfg()
 else:
     @configclass
     class PickPlacePillBottleMimicNoCamEnvCfg(PickPlacePillBottleG129InspireFTPEnvCfg):
@@ -268,12 +284,11 @@ else:
 
         def __post_init__(self):
             super().__post_init__()
-            nocam_scene = _PillBottleFTPNoCamSceneCfg(
+            self.scene = _PillBottleFTPNoCamSceneCfg(
                 num_envs=self.scene.num_envs,
                 env_spacing=self.scene.env_spacing,
             )
-            self.scene = nocam_scene
-            self.observations.policy.camera_image = None
+            self.observations = _NoCamObservationsCfg()
 
 
 # ---------------------------------------------------------------------------
