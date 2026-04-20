@@ -36,7 +36,7 @@ def compute_reward(
     env: ManagerBasedRLEnv,
     object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
     # Tier 1: reach
-    reach_threshold: float = 0.07,
+    reach_threshold: float = 0.20,
     # Tier 2: grasp
     grasp_height_above_table: float = 0.06,
     # Tier 3: lift

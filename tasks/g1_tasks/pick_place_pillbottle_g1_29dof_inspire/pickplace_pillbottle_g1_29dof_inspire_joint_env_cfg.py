@@ -70,7 +70,7 @@ class RewardsCfg:
         weight=1.0,
         params={
             "target_x": -4.25,   # match target_area position in scene
-            "target_y": -3.92,
+            "target_y": -4.00,   # was -3.92 (too close to wrist)
         },
     )
 
@@ -81,7 +81,7 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": [-0.05, 0.05], "y": [-0.05, 0.05]},
+            "pose_range": {"x": [-0.03, 0.03], "y": [-0.03, 0.03]},  # tighter ±3cm (was ±5cm)
             "velocity_range": {},
             "asset_cfg": SceneEntityCfg("object"),
         },
@@ -127,7 +127,7 @@ class PickPlacePillBottleG129InspireEnvCfg(ManagerBasedRLEnvCfg):
             func=lambda env: base_mdp.reset_root_state_uniform(
                 env,
                 torch.arange(env.num_envs, device=env.device),
-                pose_range={"x": [-0.05, 0.05], "y": [-0.05, 0.05]},
+                pose_range={"x": [-0.03, 0.03], "y": [-0.03, 0.03]},
                 velocity_range={},
                 asset_cfg=SceneEntityCfg("object"),
             )

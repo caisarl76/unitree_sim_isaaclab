@@ -32,8 +32,8 @@ class PillBottleFTPSceneCfg(TablePillBottleSceneCfg):
         init_pos=(-4.2, -3.7, 0.76),
         init_rot=(0.7071, 0, 0, -0.7071),  # -90 deg Z
     )
-    # RGBD head camera matching RealSense D435i (RGB + depth)
-    front_camera = CameraPresets.g1_realsense_d435i_camera_rgbd()
+    # RGB head camera matching RealSense D435i (depth stripped — fragile in headless)
+    front_camera = CameraPresets.g1_realsense_d435i_camera()
 
 
 @configclass
@@ -71,7 +71,7 @@ class RewardsCfg:
         weight=1.0,
         params={
             "target_x": -4.25,
-            "target_y": -3.92,
+            "target_y": -4.00,   # was -3.92 (too close to wrist)
         },
     )
 
@@ -82,7 +82,7 @@ class EventCfg:
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "pose_range": {"x": [-0.05, 0.05], "y": [-0.05, 0.05]},
+            "pose_range": {"x": [-0.03, 0.03], "y": [-0.03, 0.03]},
             "velocity_range": {},
             "asset_cfg": SceneEntityCfg("object"),
         },

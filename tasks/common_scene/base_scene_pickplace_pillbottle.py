@@ -18,7 +18,7 @@ project_root = os.environ.get("PROJECT_ROOT")
 
 # Table geometry constants
 _TABLE_CENTER_X = -4.25
-_TABLE_CENTER_Y = -4.05
+_TABLE_CENTER_Y = -4.15  # 10cm further from robot (was -4.05, too close)
 _TABLE_SURFACE_Z = 0.81     # absolute Z of table surface top
 _TABLE_WIDTH = 0.80          # X extent (m)
 _TABLE_DEPTH = 0.60          # Y extent (m)
@@ -28,10 +28,10 @@ _TABLE_LEG_SIDE = 0.04       # leg cross-section
 
 # Red tape outline constants (matching yellow crate footprint)
 _TAPE_W = 0.02               # tape width 2cm
-_BOX_X = 0.20                # crate footprint X
-_BOX_Y = 0.15                # crate footprint Y
+_BOX_X = 0.10                # target area 10x10cm (was 20x15cm, too large)
+_BOX_Y = 0.10
 _TARGET_X = -4.25            # target center X
-_TARGET_Y = -3.92            # target center Y
+_TARGET_Y = -4.00            # target center Y (was -3.92, too close to default wrist)
 _TARGET_Z = _TABLE_SURFACE_Z + 0.001  # just above table
 _RED_MAT = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.85, 0.05, 0.05), metallic=0.0)
 _NO_COLLIDE = sim_utils.CollisionPropertiesCfg(collision_enabled=False)
@@ -148,7 +148,7 @@ class TablePillBottleSceneCfg(InteractiveSceneCfg):
     object = RigidObjectCfg(
         prim_path="/World/envs/env_.*/Object",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=[-4.25, -4.05, 0.87],  # on table surface (0.81 + half height)
+            pos=[-4.25, -4.15, 0.87],  # on table surface — 10cm further from robot
             rot=[1, 0, 0, 0],
         ),
         spawn=sim_utils.CylinderCfg(
@@ -158,7 +158,7 @@ class TablePillBottleSceneCfg(InteractiveSceneCfg):
                 disable_gravity=False,
                 retain_accelerations=False,
             ),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.04),  # 40g empty bottle
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.10),  # 100g — resist accidental pushes
             collision_props=sim_utils.CollisionPropertiesCfg(
                 collision_enabled=True,
                 contact_offset=0.01,
